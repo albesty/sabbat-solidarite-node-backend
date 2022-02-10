@@ -1,7 +1,5 @@
-'use strict';
-const {
-  Model
-} = require('sequelize');
+"use strict";
+const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
   class member extends Model {
     /**
@@ -11,52 +9,48 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      member.hasMany(models.transaction,{
-        foreignKey: 'creatorId',
-        constraints: false,
-        scope: {
-          creatorType: 'member'
-        }
-      })
       member.belongsToMany(models.cotisation, {
-        through: models.member_cotisation
-      })
+        through: models.member_cotisation,
+      });
       member.hasMany(models.engagement, {
-        as: 'Creator',
-        foreignKey: 'creatorId'
-      })
+        as: "Creator",
+        foreignKey: "creatorId",
+      });
       member.belongsToMany(models.engagement, {
-        as: 'Votor',
+        as: "Votor",
         through: models.vote,
-        foreignKey: 'votorId',
-        otherKey: 'engagementId'
-      })
+        foreignKey: "votorId",
+        otherKey: "engagementId",
+      });
       member.belongsToMany(models.information, {
-        through: models.member_info
-      })
+        through: models.member_info,
+      });
       member.belongsToMany(models.role, {
-        through: 'member_roles'
-      })
+        through: "member_roles",
+      });
     }
-  };
-  member.init({
-    id: {
-      type: DataTypes.INTEGER,
-      autoIncrement: true,
-      primaryKey: true
+  }
+  member.init(
+    {
+      id: {
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
+        primaryKey: true,
+      },
+      statut: DataTypes.STRING,
+      fonds: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+      },
+      avatar: DataTypes.STRING,
+      relation: DataTypes.STRING,
+      adhesionDate: DataTypes.DATE,
+      backImage: DataTypes.STRING,
     },
-    statut: DataTypes.STRING,
-    fonds: {
-      type: DataTypes.INTEGER,
-      defaultValue: 0
-    },
-    avatar: DataTypes.STRING,
-    relation: DataTypes.STRING,
-    adhesionDate: DataTypes.DATE,
-    backImage: DataTypes.STRING
-  }, {
-    sequelize,
-    modelName: 'member',
-  });
+    {
+      sequelize,
+      modelName: "member",
+    }
+  );
   return member;
 };

@@ -1,21 +1,21 @@
-'use strict';
+"use strict";
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('associations', {
+    await queryInterface.createTable("associations", {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
-        type: Sequelize.INTEGER
+        type: Sequelize.INTEGER,
       },
       nom: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
       },
       code: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
       },
       description: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
       },
       validationLenght: {
         type: Sequelize.INTEGER,
@@ -24,35 +24,38 @@ module.exports = {
       cotisationMensuelle: Sequelize.INTEGER,
       frequenceCotisation: Sequelize.STRING,
       statut: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
       },
       fondInitial: {
-        type: Sequelize.INTEGER
+        type: Sequelize.INTEGER,
+      },
+      solde: {
+        type: Sequelize.FLOAT,
       },
       penality: {
-        type: Sequelize.INTEGER
+        type: Sequelize.INTEGER,
       },
       seuilSecurite: Sequelize.INTEGER,
       reglementInterieur: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
       },
       individualQuotite: {
         type: Sequelize.INTEGER,
       },
       interetCredit: {
-        type: Sequelize.INTEGER
+        type: Sequelize.INTEGER,
       },
       createdAt: {
         allowNull: false,
-        type: Sequelize.DATE
+        type: Sequelize.DATE,
       },
       updatedAt: {
         allowNull: false,
-        type: Sequelize.DATE
+        type: Sequelize.DATE,
       },
     });
   },
   down: async (queryInterface, Sequelize) => {
-    await queryInterface.dropTable('associations');
-  }
+    await queryInterface.dropTable("associations");
+  },
 };
