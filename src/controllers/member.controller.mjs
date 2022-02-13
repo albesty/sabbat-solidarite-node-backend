@@ -351,9 +351,9 @@ async function payCotisation(req, res, next) {
     if (montantToPay >= selectedCotisation.montant) {
       newPayed.isPayed = true;
     }
-    /*if(selectedCotisation.typeCotisation.toLowerCase() === 'mensuel') {
-            selectedMember.fonds += montantToPay
-        }*/
+    if (selectedCotisation.typeCotisation.toLowerCase() === "mensuel") {
+      selectedMember.fonds += montantToPay;
+    }
     selectedAssociation.solde += montantToPay;
 
     selectedUser.wallet -= montantToPay + 100;

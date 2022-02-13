@@ -1,7 +1,5 @@
-'use strict';
-const {
-  Model
-} = require('sequelize');
+"use strict";
+const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
   class tranche extends Model {
     /**
@@ -11,27 +9,30 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      tranche.belongsTo(models.engagement)
-      tranche.hasMany(models.payement)
+      tranche.belongsTo(models.engagement);
+      tranche.hasMany(models.payement);
     }
-  };
-  tranche.init({
-    id: {
-      type: DataTypes.INTEGER,
-      autoIncrement: true,
-      primaryKey: true
+  }
+  tranche.init(
+    {
+      id: {
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
+        primaryKey: true,
+      },
+      montant: DataTypes.INTEGER,
+      libelle: DataTypes.STRING,
+      solde: DataTypes.INTEGER,
+      echeance: DataTypes.DATE,
+      checkedForPenality: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+      },
     },
-    montant: DataTypes.INTEGER,
-    libelle: DataTypes.STRING,
-    solde: DataTypes.INTEGER,
-    echeance: DataTypes.DATE,
-    checkedForPenality: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false
+    {
+      sequelize,
+      modelName: "tranche",
     }
-  }, {
-    sequelize,
-    modelName: 'tranche',
-  });
+  );
   return tranche;
 };
