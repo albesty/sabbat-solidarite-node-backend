@@ -38,30 +38,55 @@ async function respondToAdhesionMessage(req, res, next) {
         userId: req.body.userId,
       },
     });
-    if (
-      req.body.adminResponse.toLowerCase() === "rejected" &&
-      associatedMember.relation.toLowerCase() !== "ondemand" &&
-      associatedMember.fonds !== 0
-    ) {
-      return res.status(403).send({
-        message: "Ce membre ne peut pas quitter l'association maintenant.",
+    if (!associatedMember) {
+      return res.status(404).send({ message: "Membre non trouvé" });
+    }
+
+    const adminResponse = req.body.adminResponse.toLowerCase();
+    const info = req.body.info.toLowerCase();
+    const relation = associatedMember.relation.toLowerCase();
+    const newMemberAccepted =
+      relation === "ondemand" && adminResponse === "member" && info === "new";
+    const newMemberRejected =
+      relation === "ondemand" && adminResponse === "rejected" && info === "new";
+    const oldMemberAcceptLeave =
+      relation === "onleave" && adminResponse === "accepted" && info === "old";
+    const oldMemberRejectLeave =
+      relation === "onleave" && adminResponse === "rejected" && info === "old";
+    if (newMemberRejected || oldMemberAcceptLeave) {
+      const memberEngagements = await Engagement.findAll({
+        where: {
+          creatorId: associatedMember.id,
+        },
       });
+      const isPaying = memberEngagements?.some(
+        (engage) => engage.statut.toLowerCase() === "paying"
+      );
+      if (isPaying) {
+        return res.status(403).send({
+          message: "Ce membre ne peut quitter cette association maintenant.",
+        });
+      } else {
+        await associatedMember.destroy();
+      }
+    } else {
+      if (newMemberAccepted || oldMemberRejectLeave) {
+        const member_roles = await associatedMember.getRoles();
+        associatedMember.statut = req.body.statut
+          ? req.body.statut
+          : "ORDINAIRE";
+        if (member_roles) {
+          await associatedMember.setRoles(member_roles);
+        } else {
+          await associatedMember.setRoles([1]);
+        }
+        associatedMember.relation = "member";
+        associatedMember.adhesionDate =
+          associatedMember.adhesionDate || Date.now();
+      }
+      await associatedMember.save();
     }
-    associatedMember.relation = req.body.adminResponse;
-    associatedMember.adhesionDate = Date.now();
-    if (
-      req.body.adminResponse === "member" &&
-      req.body.info.toLowerCase() === "new"
-    ) {
-      associatedMember.statut = req.body.statut ? req.body.statut : "ORDINAIRE";
-      associatedMember.setRoles([1]);
-    } else if (
-      req.body.adminResponse === "rejected" &&
-      req.body.info.toLowerCase() === "old"
-    ) {
-      associatedMember.statut = req.body.statut ? req.body.statut : "OLD";
-    }
-    await associatedMember.save();
+
     const selectedUser = await User.findByPk(req.body.userId);
     const selectedAssociation = await Association.findByPk(
       req.body.associationId
@@ -72,22 +97,14 @@ async function respondToAdhesionMessage(req, res, next) {
     const currentMember = associationMembers.find(
       (user) => user.id === req.body.userId
     );
+
     const tokenTab = [selectedUser.pushNotificationToken];
     let message = "";
-    if (
-      req.body.adminResponse.toLowerCase() === "member" &&
-      req.body.info.toLowerCase() === "new"
-    ) {
+    if (newMemberAccepted) {
       message = `Votre demande d'adhésion à ${selectedAssociation.nom} a été acceptée.`;
-    } else if (
-      req.body.adminResponse.toLowerCase() === "rejected" &&
-      req.body.info.toLowerCase() === "new"
-    ) {
+    } else if (newMemberRejected) {
       message = `Votre demande d'adhésion à ${selectedAssociation.nom} a été refusée.`;
-    } else if (
-      req.body.adminResponse.toLowerCase() === "member" &&
-      req.body.info.toLowerCase() === "old"
-    ) {
+    } else if (oldMemberRejectLeave) {
       message = `Votre demande de quitter ${selectedAssociation.nom} a été refusée.`;
     } else {
       message = `Votre demande de quitter ${selectedAssociation.nom} a été acceptée.`;
@@ -104,7 +121,10 @@ async function respondToAdhesionMessage(req, res, next) {
         }
       );
     }
-    return res.status(200).send(currentMember);
+    const member = currentMember
+      ? currentMember
+      : { memberId: req.body.userId };
+    return res.status(200).send(member);
   } catch (e) {
     next(e);
   }
@@ -198,32 +218,41 @@ async function readInfo(req, res, next) {
 }
 
 async function sendMessageToAssociation(req, res, next) {
+  const isRejected = req.body.relation?.toLowerCase() === "rejected";
   try {
     let selectedAssociation = await Association.findByPk(
       req.body.associationId
     );
     if (!selectedAssociation)
-      return res.status(404).send("association non trouvée");
+      return res.status(404).send({ message: "association non trouvée" });
     const connectedUser = await User.findByPk(req.body.userId);
-    if (!connectedUser) return res.status(404).send("utilisateur non trouvé");
-    await selectedAssociation.addUser(connectedUser, {
-      through: {
-        relation: req.body.relation ? req.body.relation : "onDemand",
-        statut: req.body.statut ? req.body.statut : "new",
-      },
-    });
+    if (!connectedUser)
+      return res.status(404).send({ message: "utilisateur non trouvé" });
+    if (isRejected) {
+      await selectedAssociation.removeUser(connectedUser);
+    } else {
+      await selectedAssociation.addUser(connectedUser, {
+        through: {
+          relation: req.body.relation ? req.body.relation : "onDemand",
+          statut: req.body.statut ? req.body.statut : "new",
+        },
+      });
+    }
     const userAssociationState = await connectedUser.getAssociations();
     const membersNotifTokens = await getUsersTokens(selectedAssociation);
+    const userName = connectedUser.username
+      ? connectedUser.username
+      : connectedUser.nom
+      ? connectedUser.nom
+      : connectedUser.email
+      ? connectedUser.email
+      : connectedUser.phone;
+    const message = isRejected
+      ? `${userName} Votre demande d'adhésion à ${selectedAssociation.nom} a été annulée`
+      : `${userName} souhaiterais adhérer ${selectedAssociation.nom}`;
     if (membersNotifTokens.length > 0) {
-      const userName = connectedUser.username
-        ? connectedUser.username
-        : connectedUser.nom
-        ? connectedUser.nom
-        : connectedUser.email
-        ? connectedUser.email
-        : connectedUser.phone;
       sendPushNotification(
-        `${userName} souhaiterais adhérer ${selectedAssociation.nom}.`,
+        `${message}`,
         membersNotifTokens,
         `Demande d'adhesion à ${selectedAssociation.nom}`,
         {
@@ -264,7 +293,9 @@ async function leaveAssociation(req, res, next) {
     const membersNotifTokens = await getUsersTokens(selectedAssociation);
     const userName = connectedUser.username
       ? connectedUser.username
-      : connectedUser.nom;
+      : connectedUser.nom
+      ? connectedUser.nom
+      : connectedUser.email;
     if (membersNotifTokens.length > 0) {
       sendPushNotification(
         `${userName} souhaiterais quitter ${selectedAssociation.nom}.`,

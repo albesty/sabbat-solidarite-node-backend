@@ -123,7 +123,8 @@ async function editMemberRoles(req, res, next) {
 async function getconnectedMemberRoles(req, res, next) {
   try {
     const connectedMember = await Member.findByPk(req.body.memberId);
-    if (!connectedMember) return res.status(404).send("membre non trouvé");
+    if (!connectedMember)
+      return res.status(404).send({ message: "membre non trouvé" });
     const memberRoles = await connectedMember.getRoles();
     const authorities = [];
     memberRoles.forEach((role) => {
@@ -141,7 +142,7 @@ async function updateAvatar(req, res, next) {
       req.body.associationId
     );
     if (!selectedAssociation)
-      return res.status(404).send("Association non trouvée");
+      return res.status(404).send({ message: "Association non trouvée" });
     selectedAssociation.avatar = req.body.avatarUrl;
     await selectedAssociation.save();
     const justUpdated = await Association.findByPk(selectedAssociation.id, {

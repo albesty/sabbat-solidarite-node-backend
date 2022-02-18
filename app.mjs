@@ -49,12 +49,10 @@ app.use(function (err, req, res, next) {
   if (!err.statusCode) statusCode = 500;
   else statusCode = err.statusCode;
   logger.log(err.message ? err.message : err.stack);
-  const message = err.message
-    ? err.message
-    : err.detail
-    ? err.detail
-    : "Nous avons rencontré une erreur interne.";
-  res.status(statusCode).send({ message: err });
+  const errorMessage = err.message || err.details;
+  let message = "Nous avons rencontré une erreur interne.";
+  if (errorMessage && errorMessage.keys().length > 0) message = errorMessage;
+  res.status(statusCode).send({ message });
 });
 
 export { app };

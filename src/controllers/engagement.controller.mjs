@@ -479,7 +479,7 @@ async function deleteEngagement(req, res, next) {
       include: [{ model: Member, as: "Creator" }, Tranche],
     });
     if (!selectedEngagement)
-      return res.status(404).send("Engagement introuvable.");
+      return res.status(404).send({ message: "Engagement introuvable." });
     if (selectedEngagement.accord === false && selectedEngagement.solde === 0) {
       await selectedEngagement.destroy();
     } else if (selectedEngagement.accord === true) {
@@ -511,7 +511,9 @@ async function deleteEngagement(req, res, next) {
         await selectedEngagement.destroy();
       }
     } else {
-      return res.status(403).send("Impossible de supprimer cet engagement.");
+      return res
+        .status(403)
+        .send({ message: "Impossible de supprimer cet engagement." });
     }
     return res.status(200).send({ engagementId: req.body.engagementId });
   } catch (e) {

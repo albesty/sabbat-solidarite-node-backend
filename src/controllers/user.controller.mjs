@@ -105,13 +105,13 @@ async function updatePushNotifToken(req, res, next) {
       : "";
     if (selectedUser.isFirstTimeConnect) {
       sendPushNotification(
-        `Félicitation, nous sommes heureux de vous accueillir. SVP complétez votre profil pour qu'on puisse mieux se connaître.`,
+        `Félicitations, nous sommes heureux de vous compter parmi nous, avec Sabbat-Solidarité, nous ferons des exploits. Si vous avez besoin d'aide n'hésiter pas à nous contacter`,
         [selectedUser.pushNotificationToken],
         `Bienvenue ${userName}`,
-        { notifType: "userCompte" }
+        { notifType: "welcome" }
       );
-      selectedUser.isFirstTimeConnect = false;
     }
+    selectedUser.isFirstTimeConnect = false;
     await selectedUser.save();
     return res.status(200).send(selectedUser);
   } catch (e) {
